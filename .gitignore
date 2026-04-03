@@ -1,0 +1,15 @@
+# Node dependencies
+node_modules/
+npm-debug.log
+
+# Newman reports
+reports/*.html
+newman/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Sensitive Environment Files (If you name them this way)
+*.env
+

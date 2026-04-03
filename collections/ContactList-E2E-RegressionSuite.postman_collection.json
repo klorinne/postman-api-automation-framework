@@ -1,0 +1,2695 @@
+{
+  "info": {
+    "_postman_id": "dea7b3a9-b546-400c-954d-c6f55a5f742c",
+    "name": "Contact List API - E2E Regression Suite",
+    "description": "## 📇 Contact List API - E2E Test Suite\n\n**Base URL:** `https://thinking-tester-contact-list.herokuapp.com`\n\nThis collection is designed to validate the full lifecycle of a contact record within the Contact List Application. It follows a sequential flow to ensure data integrity, starting from user authentication through to record cleanup and session termination.\n\n### 🧪 Test Flow Logic\n\nThe suite is structured to handle dynamic data dependencies, where subsequent requests rely on variables captured from earlier steps:\n\n1. **Authentication & Session Initiation:** Authenticates the user and captures the required access token for all following requests.\n    \n2. **Resource Creation:** Generates a new contact record and dynamically stores the unique `contactId`.\n    \n3. **Data Persistence & Retrieval:** Confirms the new record is accessible both as an individual resource and within the global contact list.\n    \n4. **Update Validation:**\n    \n    1. **Full Update (****`PUT`****):** Replaces the entire contact object to verify schema consistency.\n        \n    2. **Partial Update (****`PATCH`****):** Modifies specific fields to ensure granular data handling.\n        \n5. **Cleanup & Negative Validation:** Deletes the record and performs a follow-up check to confirm the resource no longer exists (expecting a **404 Not Found**).\n    \n6. **Session Teardown:** Formally logs the user out to invalidate the active session.\n    \n\n---\n\n### 📋 API Endpoint Reference\n\n| **Step** | **Method** | **Endpoint** | **Purpose** |\n| --- | --- | --- | --- |\n| 1 | POST | `/users/login` | Authenticates user; sets `{{token}}`. |\n| 2 | POST | `/contacts` | Creates a new contact; sets `{{contactId}}`. |\n| 3 | GET | `/contacts/{{contactId}}` | Validates retrieval of the new record. |\n| 4 | GET | `/contacts` | Validates the record appears in the full list. |\n| 5 | PUT | `/contacts/{{contactId}}` | Executes a full record update. |\n| 6 | PATCH | `/contacts/{{contactId}}` | Executes a partial field update. |\n| 7 | DELETE | `/contacts/{{contactId}}` | Removes the contact record. |\n| 8 | GET | `/contacts/{{contactId}}`  <br>  <br>`/contacts` | Confirms deletion of records. |\n| 9 | POST | `/users/logout` | Terminates the user session. |\n\n---\n\n### 📖 Documentation Version History\n\n| **Version** | **Date** | **Author** | **Description of Revision** |\n| --- | --- | --- | --- |\n| v1.0 | 2026-04-03 | Corinne | Initial test suite creation with Basic Auth and CRUD endpoints. |",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "9488494"
+  },
+  "item": [
+    {
+      "name": "Happy Path - Contacts List",
+      "item": [
+        {
+          "name": "User Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "pm.collectionVariables.set(\"userId\", jsonData.user._id);",
+                  "",
+                  "",
+                  "//tests",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Token is present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"token\");",
+                  "});",
+                  "",
+                  "pm.test(\"Expected response fields are present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"user\");",
+                  "    pm.expect(pm.response.text()).to.include(\"_id\");",
+                  "    pm.expect(pm.response.text()).to.include(\"firstName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"lastName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"email\");",
+                  "});",
+                  "",
+                  "pm.test(\"Correct firstName and lastName is displayed for email <\"+ pm.collectionVariables.get(\"email\") +\">\", function () {",
+                  "    pm.expect(jsonData.user.firstName).to.eql(\"Sample\");",
+                  "    pm.expect(jsonData.user.lastName).to.eql(\"Postman\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "//set contactId",
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"contactId\", jsonData._id);",
+                  "",
+                  "pm.test(\"HTTP Status Code is 201 Created\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202]);",
+                  "});",
+                  "",
+                  "pm.test(\"Expected response fields are present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"_id\");",
+                  "    pm.expect(pm.response.text()).to.include(\"firstName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"lastName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"birthdate\");",
+                  "    pm.expect(pm.response.text()).to.include(\"email\");",
+                  "    pm.expect(pm.response.text()).to.include(\"phone\");",
+                  "    pm.expect(pm.response.text()).to.include(\"street1\");",
+                  "    pm.expect(pm.response.text()).to.include(\"street2\");",
+                  "    pm.expect(pm.response.text()).to.include(\"city\");",
+                  "    pm.expect(pm.response.text()).to.include(\"stateProvince\");",
+                  "    pm.expect(pm.response.text()).to.include(\"postalCode\");",
+                  "    pm.expect(pm.response.text()).to.include(\"country\");",
+                  "    pm.expect(pm.response.text()).to.include(\"owner\");",
+                  "    pm.expect(pm.response.text()).to.include(\"__v\");",
+                  "});",
+                  "",
+                  "var userId = pm.variables.get(\"userId\");",
+                  "pm.test(\"Owner must contain userId \" + userId, function () {",
+                  "    pm.expect(jsonData.owner).to.eql(userId);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Contact - Only Mandatory Fields in the request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "//set contactId",
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"contactId_mandatoryField\", jsonData._id);",
+                  "",
+                  "pm.test(\"HTTP Status Code is 201 Created\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 202]);",
+                  "});",
+                  "",
+                  "pm.test(\"Expected response fields are present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"_id\");",
+                  "    pm.expect(pm.response.text()).to.include(\"firstName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"lastName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"__v\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Cassie\",\n    \"lastName\": \"Pepito\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Expected response fields are present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"_id\");",
+                  "    pm.expect(pm.response.text()).to.include(\"firstName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"lastName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"birthdate\");",
+                  "    pm.expect(pm.response.text()).to.include(\"email\");",
+                  "    pm.expect(pm.response.text()).to.include(\"phone\");",
+                  "    pm.expect(pm.response.text()).to.include(\"street1\");",
+                  "    pm.expect(pm.response.text()).to.include(\"street2\");",
+                  "    pm.expect(pm.response.text()).to.include(\"city\");",
+                  "    pm.expect(pm.response.text()).to.include(\"stateProvince\");",
+                  "    pm.expect(pm.response.text()).to.include(\"postalCode\");",
+                  "    pm.expect(pm.response.text()).to.include(\"country\");",
+                  "    pm.expect(pm.response.text()).to.include(\"owner\");",
+                  "    pm.expect(pm.response.text()).to.include(\"__v\");",
+                  "});",
+                  "",
+                  "pm.test(\"contactId is the same in request and response\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var contactId = pm.variables.get(\"contactId\");",
+                  "    pm.expect(jsonData._id).to.eql(contactId);",
+                  "});",
+                  "",
+                  "pm.test(\"lastName, firstName & email return expected values\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.lastName).to.eql(\"Poyos\");",
+                  "    pm.expect(jsonData.firstName).to.eql(\"Angge\");",
+                  "    pm.expect(jsonData.email).to.eql(\"anggepoyos@fake.com\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Expected response fields are present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"_id\");",
+                  "    pm.expect(pm.response.text()).to.include(\"firstName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"lastName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"birthdate\");",
+                  "    pm.expect(pm.response.text()).to.include(\"email\");",
+                  "    pm.expect(pm.response.text()).to.include(\"phone\");",
+                  "    pm.expect(pm.response.text()).to.include(\"street1\");",
+                  "    pm.expect(pm.response.text()).to.include(\"street2\");",
+                  "    pm.expect(pm.response.text()).to.include(\"city\");",
+                  "    pm.expect(pm.response.text()).to.include(\"stateProvince\");",
+                  "    pm.expect(pm.response.text()).to.include(\"postalCode\");",
+                  "    pm.expect(pm.response.text()).to.include(\"country\");",
+                  "    pm.expect(pm.response.text()).to.include(\"owner\");",
+                  "    pm.expect(pm.response.text()).to.include(\"__v\");",
+                  "});",
+                  "",
+                  "pm.test(\"Contacts list contains exactly 7 items\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.lengthOf(7);",
+                  "});",
+                  "",
+                  "var userId = pm.variables.get(\"userId\");",
+                  "pm.test(\"Every contact has owner value of <\" + userId + \">\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.forEach(function (item) {",
+                  "        pm.expect(item.owner).to.eql(userId);",
+                  "    });",
+                  "});",
+                  "",
+                  "var newContactId = pm.variables.get(\"contactId\");",
+                  "pm.test(\"New contactId <\" + newContactId + \"> has been added in the contact list\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(newContactId);",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Contact - All fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var newContactId = pm.variables.get(\"contactId\");",
+                  "pm.test(\"contactId <\" + newContactId + \"> is not updated\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(newContactId);",
+                  "});",
+                  "",
+                  "pm.test(\"All field values have been updated (except id and owner)\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.firstName).to.not.eql(\"Angge\");",
+                  "    pm.expect(jsonData.lastName).to.not.eql(\"Poyos\");",
+                  "    pm.expect(jsonData.birthdate).to.not.eql(\"2004-01-17\");",
+                  "    pm.expect(jsonData.email).to.not.eql(\"anggepoyos@fake.com\");",
+                  "    pm.expect(jsonData.phone).to.not.eql(\"8005555555\");",
+                  "    pm.expect(jsonData.street1).to.not.eql(\"1 Main St.\");",
+                  "    pm.expect(jsonData.street2).to.not.eql(\"Balilihan\");",
+                  "    pm.expect(jsonData.city).to.not.eql(\"Bohol\");",
+                  "    pm.expect(jsonData.stateProvince).to.not.eql(\"Visayas\");",
+                  "    pm.expect(jsonData.postalCode).to.not.eql(\"12345\");",
+                  "    pm.expect(jsonData.country).to.not.eql(\"PH\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"New firstName\",\n    \"lastName\": \"New lastName\",\n    \"birthdate\": \"2005-01-17\",\n    \"email\": \"newemail@fake.com\",\n    \"phone\": \"11111111\",\n    \"street1\": \"UST\",\n    \"street2\": \"España\",\n    \"city\": \"Manila\",\n    \"stateProvince\": \"NCR\",\n    \"postalCode\": \"54321\",\n    \"country\": \"US\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Contact - Selected Fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Expected response fields are present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"_id\");",
+                  "    pm.expect(pm.response.text()).to.include(\"firstName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"lastName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"email\");",
+                  "    pm.expect(pm.response.text()).to.include(\"owner\");",
+                  "    pm.expect(pm.response.text()).to.include(\"__v\");",
+                  "});",
+                  "",
+                  "var contactId_mandatoryField = pm.variables.get(\"contactId_mandatoryField\");",
+                  "pm.test(\"contactId <\" + contactId_mandatoryField + \"> is not updated\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(contactId_mandatoryField);",
+                  "});",
+                  "",
+                  "pm.test(\"firstName & lastName & email was updated to the requested value\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.firstName).to.eql(\"Angeline\");",
+                  "    pm.expect(jsonData.lastName).to.eql(\"Provido\");",
+                  "    pm.expect(jsonData.email).to.eql(\"angelprovidence@test.com\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Angeline\",\n    \"lastName\": \"Provido\",\n    \"email\": \"angelprovidence@test.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId_mandatoryField}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId_mandatoryField}}"
+              ]
+            },
+            "description": "The PATCH Update Contact operation is not available through the UI."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Deletion success message received\", function () {",
+                  "    pm.response.to.have.body(\"Contact deleted\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact - For Contact with only Mandatory Fields in the request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Deletion success message received\", function () {",
+                  "    pm.response.to.have.body(\"Contact deleted\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId_mandatoryField}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId_mandatoryField}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact - Check for deleted contactId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact List - Check deleted records",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Expected response fields are present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"_id\");",
+                  "    pm.expect(pm.response.text()).to.include(\"firstName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"lastName\");",
+                  "    pm.expect(pm.response.text()).to.include(\"birthdate\");",
+                  "    pm.expect(pm.response.text()).to.include(\"email\");",
+                  "    pm.expect(pm.response.text()).to.include(\"phone\");",
+                  "    pm.expect(pm.response.text()).to.include(\"street1\");",
+                  "    pm.expect(pm.response.text()).to.include(\"street2\");",
+                  "    pm.expect(pm.response.text()).to.include(\"city\");",
+                  "    pm.expect(pm.response.text()).to.include(\"stateProvince\");",
+                  "    pm.expect(pm.response.text()).to.include(\"postalCode\");",
+                  "    pm.expect(pm.response.text()).to.include(\"country\");",
+                  "    pm.expect(pm.response.text()).to.include(\"owner\");",
+                  "    pm.expect(pm.response.text()).to.include(\"__v\");",
+                  "});",
+                  "",
+                  "pm.test(\"Contacts list contains exactly 5 items after deletion\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.lengthOf(5);",
+                  "});",
+                  "",
+                  "var userId = pm.variables.get(\"userId\");",
+                  "pm.test(\"Every contact has owner value of <\" + userId + \">\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.forEach(function (item) {",
+                  "        pm.expect(item.owner).to.eql(userId);",
+                  "    });",
+                  "});",
+                  "",
+                  "var addedContactId = pm.variables.get(\"contactId\");",
+                  "var addedContactId_mandatoryField = pm.variables.get(\"contactId_mandatoryField\");",
+                  "pm.test(\"contactIds <\" + addedContactId + \">, <\" + addedContactId_mandatoryField + \"> have been deleted in the contact list\", function () {",
+                  "    pm.expect(pm.response.text()).to.not.include(addedContactId);",
+                  "    pm.expect(pm.response.text()).to.not.include(addedContactId_mandatoryField);",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Log Out",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/users/logout",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Negative Tests - User Login",
+      "item": [
+        {
+          "name": "User Login - Invalid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}12\",\n    \"password\": \"{{password}}12\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Invalid Password for Valid User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}12\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Email is blank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Email is null",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": null,\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Email is not included in the request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Password is blank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Password is null",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Password is not included in the request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Malformed JSON Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Bad Request' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"Error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Bad Request\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Login - Invalid Content-Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "xml"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Negative Tests - User Logout",
+      "item": [
+        {
+          "name": "Token was logged out twice",
+          "item": [
+            {
+              "name": "User Login - Generate Valid Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var jsonData = pm.response.json();",
+                      "pm.collectionVariables.set(\"token\", jsonData.token);",
+                      "pm.collectionVariables.set(\"userId\", jsonData.user._id);",
+                      "",
+                      "",
+                      "//tests",
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test(\"Token is present\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"token\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/users/login",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User Log Out - First Logout for token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Response body is empty\", function () {",
+                      "    pm.expect(pm.response.text()).to.be.empty;",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseURL}}/users/logout",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User Logout - Second Logout",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 401 Unathorized\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"error\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}123",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseURL}}/users/logout",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User Logout - Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}123",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/users/logout",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Logout - Token is blank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/users/logout",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Logout - No Authorization set up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/users/logout",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Negative Tests - Get Contact",
+      "item": [
+        {
+          "name": "User Login - Generate Valid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "pm.collectionVariables.set(\"userId\", jsonData.user._id);",
+                  "",
+                  "",
+                  "//tests",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Token is present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"token\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact - Contact Id does not exist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/00ceb1221b890000159c4a01",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "00ceb1221b890000159c4a01"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact - Contact Id is invalid format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Invalid Contact ID' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"Invalid Contact ID\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/69ceb1221b890000159test1",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "69ceb1221b890000159test1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact - Contact Id is blank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Invalid Contact ID' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"Invalid Contact ID\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/ ",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                " "
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact - Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}123",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact - Token is blank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact - No Authorization set up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Negative Tests - Add Contact",
+      "item": [
+        {
+          "name": "firstName field validation (Mandatory)",
+          "item": [
+            {
+              "name": "Add Contact - firstName is blank",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message '`firstName` is required.' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                      "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                      "    pm.expect(pm.response.text()).to.include(\"`firstName` is required.\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": \"\",\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/contacts",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "contacts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Contact - firstName is null",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message '`firstName` is required.' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                      "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                      "    pm.expect(pm.response.text()).to.include(\"`firstName` is required.\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": null,\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/contacts",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "contacts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Contact - firstName is not included in the request",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message '`firstName` is required.' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                      "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                      "    pm.expect(pm.response.text()).to.include(\"`firstName` is required.\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": null,\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/contacts",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "contacts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Contact - firstName exceeds max length (20)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message '`firstName` is longer than the maximum allowed length (20).' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                      "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                      "    pm.expect(pm.response.text()).to.include(\"`firstName`\");",
+                      "    pm.expect(pm.response.text()).to.include(\"is longer than the maximum allowed length (20).\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": \"Angeline Bernadette A\",\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/contacts",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "contacts"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "lastName field validation (Mandatory)",
+          "item": [
+            {
+              "name": "Add Contact - lastName is blank",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message '`lastName` is required.' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                      "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                      "    pm.expect(pm.response.text()).to.include(\"`lastName` is required.\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": \"\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/contacts",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "contacts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Contact - lastName is null",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message '`lastName` is required.' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                      "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                      "    pm.expect(pm.response.text()).to.include(\"`lastName` is required.\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": null,\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/contacts",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "contacts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Contact - lastName is not included in the request",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message '`lastName` is required.' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                      "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                      "    pm.expect(pm.response.text()).to.include(\"`lastName` is required.\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": \"Angge\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/contacts",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "contacts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Contact - lastName exceeds max length (20)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Error message '`lastName` is longer than the maximum allowed length (20).' is returned\", function () {",
+                      "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                      "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                      "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                      "    pm.expect(pm.response.text()).to.include(\"`lastName`\");",
+                      "    pm.expect(pm.response.text()).to.include(\"is longer than the maximum allowed length (20).\");",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": \"Poyos Carballo Jurado\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseURL}}/contacts",
+                  "host": [
+                    "{{baseURL}}"
+                  ],
+                  "path": [
+                    "contacts"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User Login - Generate Valid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "pm.collectionVariables.set(\"userId\", jsonData.user._id);",
+                  "",
+                  "",
+                  "//tests",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Token is present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"token\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Contact - Malformed JSON Request Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Bad Request' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"Error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Bad Request\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Contact - Invalid Content-Type (Update this please)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message '`firstName` is required.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                  "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                  "    pm.expect(pm.response.text()).to.include(\"`firstName` is required.\");",
+                  "});",
+                  "",
+                  "pm.test(\"Error message '`lastName` is required.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"errors\");",
+                  "    pm.expect(pm.response.text()).to.include(\"ValidatorError\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Contact validation failed\");",
+                  "    pm.expect(pm.response.text()).to.include(\"`lastName` is required.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "xml"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Contact - Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}123",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Contact - Token is blank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Contact - No Authorization set up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Angge\",\n    \"lastName\": \"Poyos\",\n    \"birthdate\": \"2004-01-17\",\n    \"email\": \"anggepoyos@fake.com\",\n    \"phone\": \"8005555555\",\n    \"street1\": \"1 Main St.\",\n    \"street2\": \"Balilihan\",\n    \"city\": \"Bohol\",\n    \"stateProvince\": \"Visayas\",\n    \"postalCode\": \"12345\",\n    \"country\": \"PH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/contacts",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "contactId",
+      "value": ""
+    },
+    {
+      "key": "contactId_mandatoryField",
+      "value": ""
+    }
+  ]
+}
