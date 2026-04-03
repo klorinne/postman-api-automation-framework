@@ -3,6 +3,9 @@ name: Automated API Tests
 on:
   push:
 
+permissions:
+  contents: write
+
 jobs:
   test-api:
     runs-on: ubuntu-latest
@@ -24,33 +27,36 @@ jobs:
 
       - name: Run API Tests
         run: |
-          mkdir -p "$GITHUB_WORKSPACE/reports"
+          mkdir -p reports ctrf
 
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S%3N)
-          REPORT_NAME="Test-Report_$TIMESTAMP.html"
+          # Set Philippines timezone
+          export TZ=Asia/Manila
 
-          echo "Report name: $REPORT_NAME"
+          # Collision-proof timestamp (seconds + run number)
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)_${GITHUB_RUN_NUMBER}
+          REPORT_NAME="Test-Report_${TIMESTAMP}.html"
+
+          echo "Generated report: $REPORT_NAME"
 
           newman run ./collections/ContactList-E2E-RegressionSuite.postman_collection.json \
             -e ./environments/ContactList-Production.postman_environment.json \
             -r cli,htmlextra,ctrf-json \
-            --reporter-htmlextra-export "$GITHUB_WORKSPACE/reports/$REPORT_NAME" \
+            --reporter-htmlextra-export "reports/$REPORT_NAME" \
             --reporter-ctrf-json-output-dir ctrf \
             --reporter-ctrf-json-output-file ctrf-report.json
 
-      - name: Debug Reports Folder
-        if: always()
-        run: |
-          echo "Checking reports directory..."
-          ls -lah "$GITHUB_WORKSPACE/reports"
-
-      - name: Publish Test Summary Results
+      - name: Publish CTRF Summary
         if: always()
         run: npx github-actions-ctrf ctrf/ctrf-report.json
 
-      - name: Upload HTML Artifact
-        uses: actions/upload-artifact@v4
+      - name: Commit HTML Report to Repo
         if: always()
-        with:
-          name: postman-api-reports
-          path: ${{ github.workspace }}/reports/*.html
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add reports/*.html || true
+
+          git commit -m "Generate API test HTML report for Automated API Tests #${GITHUB_RUN_NUMBER}" || exit 0
+
+          git push
