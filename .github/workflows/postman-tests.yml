@@ -1,9 +1,12 @@
 name: Automated API Tests
-on: [push]
+
+on:
+  push:
 
 jobs:
   test-api:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -17,22 +20,26 @@ jobs:
         run: |
           npm install -g newman
           npm install -g newman-reporter-htmlextra
-          npm install -g newman-reporter-gha-summary
+          npm install -g newman-reporter-ctrf-json
 
       - name: Run API Tests
         run: |
-          # Ensure the reports folder exists
           mkdir -p reports
-          
-          # Generate Timestamp: YYYYMMDD_HHMMSSms
+
           TIMESTAMP=$(date +%Y%m%d_%H%M%S%3N)
           REPORT_NAME="Test-Report_$TIMESTAMP.html"
-          
-          # Run using your specific filenames and the gha-summary reporter
+
           newman run ./collections/ContactList-E2E-RegressionSuite.postman_collection.json \
             -e ./environments/ContactList-Production.postman_environment.json \
-            -r htmlextra,gha-summary \
-            --reporter-htmlextra-export ./reports/$REPORT_NAME
+            -r cli,htmlextra,ctrf-json \
+            --reporter-htmlextra-export ./reports/$REPORT_NAME \
+            --reporter-ctrf-json-output-dir ctrf \
+            --reporter-ctrf-json-output-file ctrf-report.json \
+            --reporter-ctrf-json-test-type api
+
+      - name: Publish Test Summary Results
+        if: always()
+        run: npx github-actions-ctrf ctrf/ctrf-report.json
 
       - name: Upload HTML Artifact
         uses: actions/upload-artifact@v4
