@@ -1,0 +1,42 @@
+name: Automated API Tests
+on: [push]
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Newman & Reporters
+        run: |
+          npm install -g newman
+          npm install -g newman-reporter-htmlextra
+          npm install -g newman-reporter-github-actions-summary
+
+      - name: Run API Tests
+        run: |
+          # Ensure the existing reports folder is recognized
+          mkdir -p reports
+          
+          # Generate Timestamp: YYYYMMDD_HHMMSSms
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S%3N)
+          REPORT_NAME="Test-Report_$TIMESTAMP.html"
+          
+          # Running with your specific long filenames
+          newman run ./collections/ContactList-E2E-RegressionSuite.postman_collection.json \
+            -e ./environments/ContactList-Production.postman_environment.json \
+            -r htmlextra,github-actions-summary \
+            --reporter-htmlextra-export ./reports/$REPORT_NAME
+
+      - name: Upload HTML Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: postman-api-reports
+          path: reports/*.html
