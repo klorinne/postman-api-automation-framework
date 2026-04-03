@@ -24,18 +24,25 @@ jobs:
 
       - name: Run API Tests
         run: |
-          mkdir -p reports
+          mkdir -p "$GITHUB_WORKSPACE/reports"
 
           TIMESTAMP=$(date +%Y%m%d_%H%M%S%3N)
           REPORT_NAME="Test-Report_$TIMESTAMP.html"
 
+          echo "Report name: $REPORT_NAME"
+
           newman run ./collections/ContactList-E2E-RegressionSuite.postman_collection.json \
             -e ./environments/ContactList-Production.postman_environment.json \
             -r cli,htmlextra,ctrf-json \
-            --reporter-htmlextra-export ./reports/$REPORT_NAME \
+            --reporter-htmlextra-export "$GITHUB_WORKSPACE/reports/$REPORT_NAME" \
             --reporter-ctrf-json-output-dir ctrf \
-            --reporter-ctrf-json-output-file ctrf-report.json \
-            --reporter-ctrf-json-test-type api
+            --reporter-ctrf-json-output-file ctrf-report.json
+
+      - name: Debug Reports Folder
+        if: always()
+        run: |
+          echo "Checking reports directory..."
+          ls -lah "$GITHUB_WORKSPACE/reports"
 
       - name: Publish Test Summary Results
         if: always()
@@ -46,4 +53,4 @@ jobs:
         if: always()
         with:
           name: postman-api-reports
-          path: reports/*.html
+          path: ${{ github.workspace }}/reports/*.html
