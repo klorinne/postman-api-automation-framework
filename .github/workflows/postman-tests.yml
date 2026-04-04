@@ -47,8 +47,7 @@ jobs:
       # 📊 Show CTRF in GitHub Summary
       - name: Publish CTRF to GitHub Step Summary
         if: always()
-        run: |
-          npx github-actions-ctrf ctrf/ctrf-report.json >> $GITHUB_STEP_SUMMARY
+        run: npx github-actions-ctrf ctrf/ctrf-report.json
 
       # 📦 HTML report ONLY as artifact
       - name: Upload HTML report artifact
