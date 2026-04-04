@@ -2648,6 +2648,320 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Negative Tests - Delete Contact",
+      "item": [
+        {
+          "name": "User Login - Generate Valid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "pm.collectionVariables.set(\"userId\", jsonData.user._id);",
+                  "",
+                  "",
+                  "//tests",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Token is present\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"token\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseURL}}/users/login",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact - Contact Id does not exist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Response body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/00ceb1221b890000159c4a01",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "00ceb1221b890000159c4a01"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact - Contact Id is invalid format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Invalid Contact ID' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"Invalid Contact ID\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/69ceb1221b890000159test1",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "69ceb1221b890000159test1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact - Contact Id is blank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Invalid Contact ID' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"Invalid Contact ID\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/ ",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                " "
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact - Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}123",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact - Token is blank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unathorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message 'Please authenticate.' is returned\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact - No Authorization set up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "//sample skip test - unconditional",
+                  "pm.test.skip(\"Status code is 401 Unathorized\", () => {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "//sample skip test - conditional",
+                  "if(pm.response.code == 401){",
+                  "    pm.test.skip(\"Error message 'Please authenticate.' is returned\", () => {pm.expect(pm.response.text()).to.include(\"error\");",
+                  "    pm.expect(pm.response.text()).to.include(\"Please authenticate.\");",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseURL}}/contacts/{{contactId}}",
+              "host": [
+                "{{baseURL}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [
